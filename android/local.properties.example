@@ -1,0 +1,7 @@
+## This file must *NOT* be checked into Version Control Systems,
+# as it contains information specific to your local configuration.
+#
+# Location of the SDK. Copy this file to local.properties and set sdk.dir
+# Example:
+# sdk.dir=/Users/YOU/Library/Android/sdk
+sdk.dir=/Users/REPLACE_ME/Library/Android/sdk

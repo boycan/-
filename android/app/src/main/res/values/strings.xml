@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">微信 AI 助手</string>
+    <string name="notification_listener_label">微信消息通知监听</string>
+    <string name="accessibility_label">微信辅助发送（需用户授权）</string>
+    <string name="fg_channel_name">运行状态</string>
+    <string name="fg_channel_desc">显示助手运行状态，保障后台处理消息</string>
+    <string name="fg_title">微信 AI 助手运行中</string>
+    <string name="fg_text_running">正在监听消息并生成智能回复</string>
+    <string name="fg_text_paused">已暂停自动回复</string>
+    <string name="permission_intro_title">权限说明</string>
+    <string name="accessibility_description">仅在用户明确授权后，用于将已审核/自动确认的回复填入微信输入框并发送。不会读取无关应用数据，不会破解或注入微信客户端。</string>
+</resources>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>微信智能自动回复助手</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">智</div>
+        <div>
+          <div class="brand-name">微信 AI 助手</div>
+          <div class="brand-sub">智能自动回复</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <button data-page="dashboard" class="active">首页总览</button>
+        <button data-page="chats">会话管理</button>
+        <button data-page="review">人工审核 <span class="badge" id="review-badge">0</span></button>
+        <button data-page="rules">回复规则</button>
+        <button data-page="logs">运行日志</button>
+        <button data-page="simulator">模拟器</button>
+        <button data-page="settings">软件设置</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="runtime-chip" id="runtime-chip">
+          <span class="dot"></span>
+          <span id="runtime-label">已停止</span>
+        </div>
+        <div class="sidebar-actions">
+          <button class="btn primary" id="btn-start">启动自动回复</button>
+          <button class="btn" id="btn-pause">暂停</button>
+          <button class="btn ghost" id="btn-stop">停止服务</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="page-title">首页总览</h1>
+          <p class="muted" id="page-desc">运行状态、今日数据与最近活动</p>
+        </div>
+        <div class="topbar-right">
+          <div class="model-pill" id="model-pill">内置免费模型 · 就绪</div>
+          <button class="icon-btn" id="btn-notify" title="通知">通知</button>
+        </div>
+      </header>
+
+      <section class="page active" id="page-dashboard"></section>
+      <section class="page" id="page-chats"></section>
+      <section class="page" id="page-review"></section>
+      <section class="page" id="page-rules"></section>
+      <section class="page" id="page-logs"></section>
+      <section class="page" id="page-simulator"></section>
+      <section class="page" id="page-settings"></section>
+    </main>
+  </div>
+
+  <div class="modal-mask" id="close-modal">
+    <div class="modal">
+      <h3>最小化到系统托盘</h3>
+      <p>关闭主窗口不会退出程序。软件将继续在后台运行，并监听新消息。</p>
+      <div class="modal-actions">
+        <button class="btn ghost" id="close-quit">退出软件</button>
+        <button class="btn primary" id="close-tray">最小化到托盘</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toasts"></div>
+
+  <script src="js/core.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/adapters.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>

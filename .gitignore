@@ -1,0 +1,26 @@
+# 依赖 / 构建
+.gradle/
+**/build/
+local.properties
+*.iml
+.idea/
+.cxx/
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 密钥（严禁提交）
+*.jks
+*.keystore
+**/secrets/
+.env
+.env.*
+
+# 日志
+*.log
