@@ -50,11 +50,11 @@ class WeChatNotificationListener : NotificationListenerService() {
             // 部分版本使用 MessagingStyle
             extras.getParcelableArray(Notification.EXTRA_MESSAGES)
                 ?.mapNotNull { item ->
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        Notification.MessagingStyle.Message
-                            .getMessageFromBundle(item as? android.os.Bundle ?: return@mapNotNull null)
-                            ?.text?.toString()
-                    } else null
+                    // MessagingStyle 的 Bundle 文本键在 Android SDK 中没有公开便捷解析方法，
+                    // 直接读取标准 text 字段，避免依赖不存在的 getMessageFromBundle。
+                    (item as? android.os.Bundle)
+                        ?.getCharSequence("text")
+                        ?.toString()
                 }?.lastOrNull()
         ).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 
