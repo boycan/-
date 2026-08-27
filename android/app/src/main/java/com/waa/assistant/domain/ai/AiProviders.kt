@@ -307,19 +307,19 @@ class AiRouter(
         return when (settings.aiProvider) {
             AiProviderType.DEEPSEEK -> {
                 val ready = settings.apiKeyForCurrentProvider().isNotBlank()
-                "DeepSeek · ${settings.openaiModel}" + if (ready) " · 就绪" else " · 待填 Key" to ready
+                ("DeepSeek · ${settings.openaiModel}" + if (ready) " · 就绪" else " · 待填 Key") to ready
             }
             AiProviderType.GEMINI -> {
                 val ready = settings.apiKeyForCurrentProvider().isNotBlank()
-                "Gemini · ${settings.openaiModel}" + if (ready) " · 就绪" else " · 待填 Key" to ready
+                ("Gemini · ${settings.openaiModel}" + if (ready) " · 就绪" else " · 待填 Key") to ready
             }
             AiProviderType.SILICONFLOW -> {
                 val ready = settings.apiKeyForCurrentProvider().isNotBlank()
-                "硅基流动 · ${settings.openaiModel}" + if (ready) " · 就绪" else " · 待填 Key" to ready
+                ("硅基流动 · ${settings.openaiModel}" + if (ready) " · 就绪" else " · 待填 Key") to ready
             }
             AiProviderType.OPENROUTER -> {
                 val ready = settings.apiKeyForCurrentProvider().isNotBlank()
-                "OpenRouter · ${settings.openaiModel}" + if (ready) " · 就绪" else " · 待填 Key" to ready
+                ("OpenRouter · ${settings.openaiModel}" + if (ready) " · 就绪" else " · 待填 Key") to ready
             }
             AiProviderType.OLLAMA -> "Ollama · ${settings.ollamaModel}" to true
             AiProviderType.OPENAI_COMPATIBLE -> {
