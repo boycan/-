@@ -1,6 +1,7 @@
 package com.waa.assistant.domain.adapter
 
 import android.accessibilityservice.AccessibilityService
+import android.content.Intent
 import android.os.Bundle
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -35,19 +36,29 @@ class WeChatAccessibilityService : AccessibilityService() {
      */
     suspend fun trySend(conversationName: String, text: String): Result<Unit> {
         return runCatching {
-            val root = rootInActiveWindow ?: error("无法获取当前窗口")
-            if (root.packageName?.toString() != WeChatNotificationListener.WECHAT_PACKAGE) {
-                error("请先打开微信并进入「$conversationName」会话后再发送")
+            // 审核页点击“发送”后，助手会成为前台窗口。重新拉起微信，
+            // 通常会恢复到用户之前打开的会话，再由无障碍服务操作输入框。
+            var root = rootInActiveWindow
+            if (root?.packageName?.toString() != WeChatNotificationListener.WECHAT_PACKAGE) {
+                bringWeChatToFront()
+                root = waitForWeChatRoot()
             }
-            val edit = findEditable(root) ?: error("未找到输入框，请确认已打开聊天窗口")
+            if (root == null) {
+                error("无法切换到微信，请先返回微信并进入「$conversationName」会话后重试")
+            }
+            val wechatRoot = root
+            if (wechatRoot.packageName?.toString() != WeChatNotificationListener.WECHAT_PACKAGE) {
+                error("当前不是微信窗口，请先打开微信并进入「$conversationName」会话后重试")
+            }
+            val edit = findEditable(wechatRoot) ?: error("未找到微信输入框，请确认已进入「$conversationName」聊天窗口")
             val args = Bundle().apply {
                 putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
             }
             if (!edit.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)) {
-                error("写入输入框失败")
+                    error("写入微信输入框失败")
             }
             delay(250)
-            val send = findSendButton(rootInActiveWindow ?: root)
+            val send = findSendButton(waitForWeChatRoot() ?: wechatRoot)
             if (send != null) {
                 if (!send.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
                     error("点击发送失败")
@@ -58,6 +69,29 @@ class WeChatAccessibilityService : AccessibilityService() {
             }
             Unit
         }
+    }
+
+    private suspend fun bringWeChatToFront() {
+        val launchIntent = packageManager
+            .getLaunchIntentForPackage(WeChatNotificationListener.WECHAT_PACKAGE)
+            ?.apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+            }
+            ?: error("未找到微信应用")
+        startActivity(launchIntent)
+        delay(700)
+    }
+
+    private suspend fun waitForWeChatRoot(): AccessibilityNodeInfo? {
+        repeat(8) {
+            val root = rootInActiveWindow
+            if (root?.packageName?.toString() == WeChatNotificationListener.WECHAT_PACKAGE) {
+                return root
+            }
+            delay(250)
+        }
+        return null
     }
 
     private fun findEditable(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
