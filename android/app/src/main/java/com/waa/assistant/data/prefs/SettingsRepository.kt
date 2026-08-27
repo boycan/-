@@ -175,6 +175,17 @@ class SettingsRepository(private val context: Context) {
             else -> storedModel
         }
 
+        // 早期版本默认写入了“你好/在吗”关键词。它们不是用户主动设置的规则，
+        // 迁移时清掉，确保默认行为是所有微信普通文字消息都进入审核。
+        val effectiveKeywords = if (
+            keywords.map { it.keyword }.toSet() == setOf("你好", "在吗") &&
+            keywords.all { it.enabled }
+        ) {
+            emptyList()
+        } else {
+            keywords
+        }
+
         return AppSettings(
             runtimeStatus = this[Keys.runtimeStatus]?.let { runCatching { RuntimeStatus.valueOf(it) }.getOrNull() }
                 ?: RuntimeStatus.STOPPED,
@@ -219,7 +230,7 @@ class SettingsRepository(private val context: Context) {
             whitelistOnly = this[Keys.whitelistOnly] ?: false,
             contactAllow = listOf(Keys.contactAllow),
             groupAllow = listOf(Keys.groupAllow),
-            keywords = keywords,
+            keywords = effectiveKeywords,
             adapterType = this[Keys.adapterType] ?: "simulator",
             permissionIntroAccepted = this[Keys.permissionIntroAccepted] ?: false
         )

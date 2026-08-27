@@ -62,7 +62,10 @@ class RulesEngine {
             }
         }
 
-        val enabledKeywords = settings.keywords.filter { it.enabled }.map { it.keyword }
+        // 关键词是可选的额外限制；空列表表示默认处理所有普通文字消息。
+        val enabledKeywords = settings.keywords
+            .filter { it.enabled && it.keyword.isNotBlank() }
+            .map { it.keyword }
         if (enabledKeywords.isNotEmpty()) {
             val hit = enabledKeywords.any { message.content.contains(it, ignoreCase = true) }
             if (!hit) return RuleDecision(false, "未命中关键词")

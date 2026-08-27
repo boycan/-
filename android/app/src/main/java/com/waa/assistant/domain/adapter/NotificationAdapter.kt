@@ -62,11 +62,15 @@ class WeChatNotificationListener : NotificationListenerService() {
         // 过滤微信内部提示类通知
         if (title.contains("微信") && text.contains("登录")) return
 
-        val isGroup = title.contains("]") || title.contains("群") || text.contains(":")
+        val isGroup = title.contains("]") || title.contains("群") ||
+            text.contains(":") || text.contains("：")
         val senderName: String
         val content: String
-        if (isGroup && text.contains(":")) {
-            val idx = text.indexOf(':')
+        val separatorIndex = listOf(text.indexOf(':'), text.indexOf('：'))
+            .filter { it >= 0 }
+            .minOrNull() ?: -1
+        if (isGroup && separatorIndex >= 0) {
+            val idx = separatorIndex
             senderName = text.substring(0, idx).trim().ifBlank { title }
             content = text.substring(idx + 1).trim()
         } else {
@@ -79,7 +83,8 @@ class WeChatNotificationListener : NotificationListenerService() {
         val msg = IncomingMessage(
             id = AppIds.newId("msg"),
             conversationId = conversationId,
-            conversationName = title,
+            // 一对一通知标题通常就是联系人；群聊标题是群名
+            conversationName = title.ifBlank { senderName },
             conversationType = if (isGroup) ConversationType.GROUP else ConversationType.CONTACT,
             senderId = senderName.hashCode().toUInt().toString(16),
             senderName = senderName,

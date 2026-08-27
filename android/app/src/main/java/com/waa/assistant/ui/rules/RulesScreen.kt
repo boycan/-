@@ -107,7 +107,7 @@ fun RulesScreen(vm: AppViewModel) {
                 val list = v.lines().map { it.trim() }.filter { it.isNotEmpty() }.map { KeywordRule(it) }
                 vm.updateSettings { it.copy(keywords = list) }
             },
-            label = { Text("关键词（每行一个，空=不限制）") },
+            label = { Text("关键词（可选；留空=监听全部普通文字消息）") },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3
         )
