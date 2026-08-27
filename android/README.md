@@ -17,7 +17,15 @@
 - 防护：去重、冷却、每分钟/每日上限、异常自动暂停、跳过自己的消息
 - 前台服务 + 通知栏状态 + 开机恢复 + 电池优化引导
 
-## 打开工程
+## 不装 Android Studio：云端打包
+
+推荐走仓库根目录的 GitHub Actions，说明见：
+
+[`../docs/CLOUD_BUILD.md`](../docs/CLOUD_BUILD.md)
+
+推送后到 GitHub → Actions → 下载 `WeChatAIAssistant-debug-apk`。
+
+## 打开工程（可选，本地编译）
 
 1. 安装 [Android Studio](https://developer.android.com/studio)（带 JDK 17）
 2. `Open` 本目录：
@@ -28,8 +36,6 @@ wechat-ai-assistant/android
 
 3. 等待 Gradle Sync
 4. 连接手机或启动模拟器，Run `app`
-
-> 本机若未安装 Android SDK，无法直接命令行出包；用 Android Studio 打开即可编译安装。
 
 ## 配置免费模型（重要）
 
