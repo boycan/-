@@ -23,36 +23,71 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Install Android command-line tools
+      - name: Show preinstalled Android SDK
         run: |
-          set -euo pipefail
-          ANDROID_HOME="${HOME}/android-sdk"
-          mkdir -p "${ANDROID_HOME}/cmdline-tools"
-          curl -fsSL "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -o /tmp/cmdtools.zip
-          unzip -q /tmp/cmdtools.zip -d "${ANDROID_HOME}/cmdline-tools"
-          rm -rf "${ANDROID_HOME}/cmdline-tools/latest"
-          mv "${ANDROID_HOME}/cmdline-tools/cmdline-tools" "${ANDROID_HOME}/cmdline-tools/latest"
-          echo "ANDROID_HOME=${ANDROID_HOME}" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=${ANDROID_HOME}" >> "$GITHUB_ENV"
-          echo "${ANDROID_HOME}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-          echo "${ANDROID_HOME}/platform-tools" >> "$GITHUB_PATH"
+          echo "ANDROID_HOME=${ANDROID_HOME:-}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-}"
+          ls -la "${ANDROID_HOME:-/usr/local/lib/android/sdk}" || true
+          ls -la "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" || true
 
-      - name: Accept licenses and install SDK packages
+      - name: Prepare SDK and local.properties
         run: |
-          set -euo pipefail
-          yes | sdkmanager --licenses >/tmp/sdk-licenses.txt || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+          set -eu
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
 
-      - name: Create local.properties
-        run: |
-          echo "sdk.dir=${ANDROID_HOME}" > android/local.properties
+          # Find sdkmanager from common locations on GitHub-hosted runners
+          SDKMANAGER=""
+          for c in \
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "$ANDROID_HOME/cmdline-tools/bin/sdkmanager" \
+            "$ANDROID_HOME/tools/bin/sdkmanager"
+          do
+            if [ -x "$c" ]; then SDKMANAGER="$c"; break; fi
+          done
+
+          # Some images nest a versioned cmdline-tools folder
+          if [ -z "$SDKMANAGER" ] && [ -d "$ANDROID_HOME/cmdline-tools" ]; then
+            CAND=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager 2>/dev/null | head -n 1 || true)
+            if [ -n "${CAND:-}" ] && [ -x "$CAND" ]; then SDKMANAGER="$CAND"; fi
+          fi
+
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found, installing command-line tools..."
+            mkdir -p "$ANDROID_HOME/cmdline-tools"
+            curl -fsSL "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -o /tmp/cmdtools.zip
+            rm -rf /tmp/cmdline-tools-extract
+            unzip -q /tmp/cmdtools.zip -d /tmp/cmdline-tools-extract
+            rm -rf "$ANDROID_HOME/cmdline-tools/latest"
+            mv /tmp/cmdline-tools-extract/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          fi
+
+          echo "Using sdkmanager: $SDKMANAGER"
+          mkdir -p "$HOME/.android"
+          touch "$HOME/.android/repositories.cfg"
+
+          # Do NOT use pipefail here: `yes | sdkmanager --licenses` often exits 141
+          set +e
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses >/tmp/sdk-licenses.txt 2>&1
+          LIC_CODE=$?
+          set -e
+          echo "license exit code: $LIC_CODE"
+          tail -n 40 /tmp/sdk-licenses.txt || true
+
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           cat android/local.properties
 
       - name: Build Debug APK
         working-directory: android
         run: |
+          set -o pipefail
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-build.log
 
       - name: Rename APK
         run: |
@@ -67,3 +102,14 @@ jobs:
           path: dist/WeChatAIAssistant-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: |
+            /tmp/gradle-build.log
+            /tmp/sdk-licenses.txt
+          if-no-files-found: warn
+          retention-days: 7
