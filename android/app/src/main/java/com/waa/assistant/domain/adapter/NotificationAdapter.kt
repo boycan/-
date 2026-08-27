@@ -24,6 +24,16 @@ import java.util.concurrent.atomic.AtomicReference
  * 自动发送不在此实现，发送走 Accessibility / 人工确认。
  */
 class WeChatNotificationListener : NotificationListenerService() {
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        listenerConnected.set(true)
+    }
+
+    override fun onListenerDisconnected() {
+        listenerConnected.set(false)
+        super.onListenerDisconnected()
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         if (sbn == null) return
         if (sbn.packageName != WECHAT_PACKAGE) return
@@ -33,7 +43,19 @@ class WeChatNotificationListener : NotificationListenerService() {
         val text = sequenceOf(
             extras.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
             extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString(),
-            extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()
+            extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString(),
+            // 部分 Android/微信版本把消息放在通知的多行字段中
+            extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)
+                ?.joinToString("\n") { it.toString() },
+            // 部分版本使用 MessagingStyle
+            extras.getParcelableArray(Notification.EXTRA_MESSAGES)
+                ?.mapNotNull { item ->
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        Notification.MessagingStyle.Message
+                            .getMessageFromBundle(item as? android.os.Bundle ?: return@mapNotNull null)
+                            ?.text?.toString()
+                    } else null
+                }?.lastOrNull()
         ).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 
         if (title.isBlank() || text.isBlank()) return
@@ -72,6 +94,7 @@ class WeChatNotificationListener : NotificationListenerService() {
     companion object {
         const val WECHAT_PACKAGE = "com.tencent.mm"
         private val sink = AtomicReference<((IncomingMessage) -> Unit)?>(null)
+        private val listenerConnected = java.util.concurrent.atomic.AtomicBoolean(false)
 
         fun setSink(handler: ((IncomingMessage) -> Unit)?) {
             sink.set(handler)
@@ -87,6 +110,8 @@ class WeChatNotificationListener : NotificationListenerService() {
                 ComponentName.unflattenFromString(it)?.equals(cn) == true || it.contains(context.packageName)
             }
         }
+
+        fun isConnected(): Boolean = listenerConnected.get()
     }
 }
 

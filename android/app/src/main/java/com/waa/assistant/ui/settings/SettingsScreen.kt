@@ -58,12 +58,12 @@ fun SettingsScreen(vm: AppViewModel) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = s.adapterType == "simulator",
-                onClick = { vm.updateSettings { it.copy(adapterType = "simulator") } },
+                onClick = { vm.changeAdapter("simulator") },
                 label = { Text("模拟器") }
             )
             FilterChip(
                 selected = s.adapterType == "notification",
-                onClick = { vm.updateSettings { it.copy(adapterType = "notification") } },
+                onClick = { vm.changeAdapter("notification") },
                 label = { Text("通知监听") }
             )
         }
@@ -255,7 +255,14 @@ fun SettingsScreen(vm: AppViewModel) {
 
         Text("权限与后台", fontWeight = FontWeight.SemiBold)
         val notifOk = WeChatNotificationListener.isEnabled(context)
-        Text("通知监听：${if (notifOk) "已授权" else "未授权"}")
+        val notifConnected = WeChatNotificationListener.isConnected()
+        Text(
+            "通知监听：${when {
+                notifConnected -> "已连接"
+                notifOk -> "已授权但未连接，请重启监听"
+                else -> "未授权"
+            }}"
+        )
         Button(onClick = {
             context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }) { Text("打开通知使用权设置") }

@@ -63,10 +63,8 @@ data class AppSettings(
     val whitelistOnly: Boolean = false,
     val contactAllow: List<String> = emptyList(),
     val groupAllow: List<String> = emptyList(),
-    val keywords: List<KeywordRule> = listOf(
-        KeywordRule("在吗"),
-        KeywordRule("你好")
-    ),
+    /** 为空表示不限制关键词；关键词触发由用户主动配置 */
+    val keywords: List<KeywordRule> = emptyList(),
 
     /** simulator | notification | accessibility_send */
     val adapterType: String = "simulator",

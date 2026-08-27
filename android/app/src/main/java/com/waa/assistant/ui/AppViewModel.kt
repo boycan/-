@@ -102,6 +102,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         settingsRepo.update(transform)
     }
 
+    fun changeAdapter(adapterType: String) = viewModelScope.launch {
+        val wasRunning = engine.status.value != RuntimeStatus.STOPPED
+        if (wasRunning) engine.stop()
+        settingsRepo.update { it.copy(adapterType = adapterType) }
+        if (wasRunning) {
+            kotlinx.coroutines.delay(300)
+            engine.start(settingsRepo.get())
+        }
+    }
+
     fun injectDemo(name: String, content: String, isGroup: Boolean = false) = viewModelScope.launch {
         if (engine.status.value == RuntimeStatus.STOPPED) {
             start()

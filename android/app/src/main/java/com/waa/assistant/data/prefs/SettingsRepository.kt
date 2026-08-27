@@ -140,7 +140,7 @@ class SettingsRepository(private val context: Context) {
 
         val keywordRaw = this[Keys.keywords]
         val keywords = if (keywordRaw.isNullOrBlank()) {
-            AppSettings().keywords
+            emptyList()
         } else {
             keywordRaw.lines().mapNotNull { line ->
                 val parts = line.split("|")
