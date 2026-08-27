@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.WeChatAIAssistant" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Material 1.12+ 提供该主题；若缺失则依赖会拉取兼容资源 -->
         <item name="android:statusBarColor">@color/seed_dark</item>
         <item name="android:navigationBarColor">@color/bg</item>
         <item name="android:windowLightStatusBar">false</item>
