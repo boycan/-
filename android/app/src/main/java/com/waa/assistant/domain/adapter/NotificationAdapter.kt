@@ -112,7 +112,7 @@ class WeChatNotificationListener : NotificationListenerService() {
                 "enabled_notification_listeners"
             ) ?: return false
             return flat.split(":").any {
-                ComponentName.unflattenFromString(it)?.equals(cn) == true || it.contains(context.packageName)
+                ComponentName.unflattenFromString(it)?.equals(cn) == true
             }
         }
 

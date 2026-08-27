@@ -1,5 +1,8 @@
 package com.waa.assistant.ui.review
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,6 +32,7 @@ import com.waa.assistant.ui.AppViewModel
 fun ReviewScreen(vm: AppViewModel) {
     val jobs by vm.reviewJobs.collectAsState()
     val drafts = remember { mutableStateMapOf<String, String>() }
+    val context = LocalContext.current
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("辅助回复 / 人工审核", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -56,6 +61,10 @@ fun ReviewScreen(vm: AppViewModel) {
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(onClick = { vm.approve(job.id, text) }) { Text("发送") }
+                            OutlinedButton(onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                clipboard.setPrimaryClip(ClipData.newPlainText("AI 回复", text))
+                            }) { Text("复制回复") }
                             OutlinedButton(onClick = { vm.regenerate(job.id) }) { Text("重新生成") }
                             OutlinedButton(onClick = { vm.ignore(job.id) }) { Text("忽略") }
                         }

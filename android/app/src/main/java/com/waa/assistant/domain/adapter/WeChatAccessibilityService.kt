@@ -108,36 +108,19 @@ class WeChatAccessibilityService : AccessibilityService() {
         if (node == null) return null
         val text = node.text?.toString().orEmpty()
         val desc = node.contentDescription?.toString().orEmpty()
-        if ((text == "发送" || desc == "发送") && (node.isClickable || node.isEnabled)) {
+        val resourceId = node.viewIdResourceName.orEmpty()
+        val clearlySend = text.trim() == "发送" ||
+            desc.trim() == "发送" ||
+            resourceId.contains("send", ignoreCase = true)
+        if (clearlySend && node.isClickable && node.isEnabled) {
             return node
         }
         for (i in 0 until node.childCount) {
             val found = findSendButton(node.getChild(i))
             if (found != null) return found
         }
-        // 常见：发送按钮可能是 ImageButton 无文本，尝试右下角可点击节点
-        return findLikelySendByPosition(node)
-    }
-
-    private fun findLikelySendByPosition(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        val candidates = mutableListOf<AccessibilityNodeInfo>()
-        fun walk(n: AccessibilityNodeInfo) {
-            if (n.isClickable) {
-                val rect = android.graphics.Rect()
-                n.getBoundsInScreen(rect)
-                if (rect.width() in 80..400 && rect.height() in 60..240) {
-                    candidates += n
-                }
-            }
-            for (i in 0 until n.childCount) n.getChild(i)?.let { walk(it) }
-        }
-        walk(root)
-        // 取最靠右下的可点击小按钮作为候选（启发式，可能失败）
-        return candidates.maxByOrNull {
-            val r = android.graphics.Rect()
-            it.getBoundsInScreen(r)
-            r.right + r.bottom
-        }
+        // 不再按“右下角最大按钮”猜测，避免误点微信其他操作。
+        return null
     }
 
     companion object {

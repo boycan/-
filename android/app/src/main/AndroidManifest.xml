@@ -54,7 +54,7 @@
         <!-- 仅用于用户授权后的辅助发送；禁止破解微信 -->
         <service
             android:name=".domain.adapter.WeChatAccessibilityService"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/accessibility_label"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
