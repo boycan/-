@@ -9,6 +9,7 @@ import com.waa.assistant.data.model.ConversationEntity
 import com.waa.assistant.data.model.LogEntity
 import com.waa.assistant.data.model.MessageEntity
 import com.waa.assistant.data.model.ReplyJobEntity
+import com.waa.assistant.data.model.KnowledgeEntry
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -105,4 +106,22 @@ interface LogDao {
 
     @Query("DELETE FROM logs WHERE ts < :before")
     suspend fun purgeBefore(before: Long)
+}
+
+@Dao
+interface KnowledgeDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entry: KnowledgeEntry)
+
+    @Query("SELECT * FROM knowledge_entries ORDER BY updatedAt DESC")
+    fun observeAll(): Flow<List<KnowledgeEntry>>
+
+    @Query("SELECT * FROM knowledge_entries ORDER BY updatedAt DESC")
+    suspend fun all(): List<KnowledgeEntry>
+
+    @Query("DELETE FROM knowledge_entries WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("DELETE FROM knowledge_entries")
+    suspend fun clearAll()
 }

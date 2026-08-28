@@ -235,7 +235,7 @@ class MessageEngine(
         } else emptyList()
 
         val ai = try {
-            aiRouter.generate(workMsg, ctx, settings)
+            aiRouter.generate(workMsg, ctx, settings, db.knowledge().all())
         } catch (t: Throwable) {
             db.jobs().upsert(
                 job.copy(
@@ -271,16 +271,25 @@ class MessageEngine(
                 val sendResult = adapter?.send(workMsg.conversationId, workMsg.conversationName, ai.text)
                     ?: Result.failure(IllegalStateException("无可用发送适配器"))
                 if (sendResult.isSuccess) {
-                    persistSelfReply(workMsg, ai.text)
-                    cooldownUntil[workMsg.conversationId] = System.currentTimeMillis() + settings.cooldownSeconds * 1000L
+                    val onlyFilled = adapter?.id == "notification"
+                    if (!onlyFilled) {
+                        persistSelfReply(workMsg, ai.text)
+                        cooldownUntil[workMsg.conversationId] =
+                            System.currentTimeMillis() + settings.cooldownSeconds * 1000L
+                    }
                     db.jobs().upsert(
                         updated.copy(
-                            status = JobStatus.SENT.name,
-                            repliedAt = System.currentTimeMillis(),
+                            status = if (onlyFilled) JobStatus.FILLED.name else JobStatus.SENT.name,
+                            repliedAt = if (onlyFilled) null else System.currentTimeMillis(),
                             updatedAt = System.currentTimeMillis()
                         )
                     )
-                    log("info", "send", "自动回复成功：${workMsg.conversationName}")
+                    log(
+                        "info",
+                        "send",
+                        if (onlyFilled) "已填入微信输入框，等待用户点击发送：${workMsg.conversationName}"
+                        else "自动回复成功：${workMsg.conversationName}"
+                    )
                 } else {
                     db.jobs().upsert(
                         updated.copy(
@@ -304,29 +313,41 @@ class MessageEngine(
         val result = adapter?.send(job.conversationId, job.conversationName, finalText)
             ?: Result.failure(IllegalStateException("引擎未启动或无适配器"))
         if (result.isSuccess) {
-            persistSelfReply(
-                IncomingMessage(
-                    id = job.messageId,
-                    conversationId = job.conversationId,
-                    conversationName = job.conversationName,
-                    senderId = "self",
-                    senderName = "我",
-                    content = job.incomingText,
-                    timestamp = job.createdAt
-                ),
-                finalText
-            )
-            cooldownUntil[job.conversationId] = System.currentTimeMillis() + settings.cooldownSeconds * 1000L
+            val onlyFilled = adapter?.id == "notification"
+            if (!onlyFilled) {
+                persistSelfReply(
+                    IncomingMessage(
+                        id = job.messageId,
+                        conversationId = job.conversationId,
+                        conversationName = job.conversationName,
+                        senderId = "self",
+                        senderName = "我",
+                        content = job.incomingText,
+                        timestamp = job.createdAt
+                    ),
+                    finalText
+                )
+                cooldownUntil[job.conversationId] =
+                    System.currentTimeMillis() + settings.cooldownSeconds * 1000L
+            }
             db.jobs().upsert(
                 job.copy(
-                    status = JobStatus.SENT.name,
+                    status = if (onlyFilled) JobStatus.FILLED.name else JobStatus.SENT.name,
                     editedText = finalText,
-                    repliedAt = System.currentTimeMillis(),
+                    repliedAt = if (onlyFilled) null else System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis(),
                     error = ""
                 )
             )
-            log("info", "send", "人工确认发送成功：${job.conversationName}")
+            log(
+                "info",
+                "send",
+                if (adapter?.id == "notification") {
+                    "已填入微信输入框，等待用户点击发送：${job.conversationName}"
+                } else {
+                    "人工确认发送成功：${job.conversationName}"
+                }
+            )
         } else {
             db.jobs().upsert(
                 job.copy(
@@ -361,7 +382,7 @@ class MessageEngine(
         )
         db.jobs().upsert(job.copy(status = JobStatus.GENERATING.name, updatedAt = System.currentTimeMillis()))
         try {
-            val ai = aiRouter.generate(msg, ctx, settings)
+            val ai = aiRouter.generate(msg, ctx, settings, db.knowledge().all())
             db.jobs().upsert(
                 job.copy(
                     generatedText = ai.text,

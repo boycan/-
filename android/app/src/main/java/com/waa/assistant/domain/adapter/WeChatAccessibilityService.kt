@@ -34,7 +34,7 @@ class WeChatAccessibilityService : AccessibilityService() {
      * 尽力在当前微信聊天页输入并点击发送。
      * 需要用户先打开对应会话；本方法不做会话导航破解。
      */
-    suspend fun trySend(conversationName: String, text: String): Result<Unit> {
+    suspend fun fillInput(conversationName: String, text: String): Result<Unit> {
         return runCatching {
             // 审核页点击“发送”后，助手会成为前台窗口。重新拉起微信，
             // 通常会恢复到用户之前打开的会话，再由无障碍服务操作输入框。
@@ -58,15 +58,7 @@ class WeChatAccessibilityService : AccessibilityService() {
                     error("写入微信输入框失败")
             }
             delay(250)
-            val send = findSendButton(waitForWeChatRoot() ?: wechatRoot)
-            if (send != null) {
-                if (!send.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                    error("点击发送失败")
-                }
-            } else {
-                // 兜底：尝试回车手势不一定可靠，直接失败提示人工
-                error("未找到发送按钮，请手动点击发送")
-            }
+            // 故意不点击发送：仅填入输入框，由用户在微信审核后手动点击“发送”。
             Unit
         }
     }
@@ -140,7 +132,7 @@ class AccessibilitySendAdapter : WeChatAdapter {
     override suspend fun send(conversationId: String, conversationName: String, text: String): Result<Unit> {
         val svc = WeChatAccessibilityService.instance
             ?: return Result.failure(IllegalStateException("辅助功能未开启"))
-        return svc.trySend(conversationName, text)
+        return svc.fillInput(conversationName, text)
     }
 
     override suspend fun health(): Pair<Boolean, String> {

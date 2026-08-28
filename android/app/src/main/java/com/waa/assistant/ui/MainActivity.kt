@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Rule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VerifiedUser
@@ -38,6 +39,7 @@ import androidx.navigation.compose.rememberNavController
 import com.waa.assistant.ui.chats.ChatsScreen
 import com.waa.assistant.ui.home.HomeScreen
 import com.waa.assistant.ui.logs.LogsScreen
+import com.waa.assistant.ui.knowledge.KnowledgeScreen
 import com.waa.assistant.ui.permissions.PermissionsScreen
 import com.waa.assistant.ui.review.ReviewScreen
 import com.waa.assistant.ui.rules.RulesScreen
@@ -86,6 +88,7 @@ fun WaaAppRoot(vm: AppViewModel = viewModel()) {
         Tab("review", "审核", Icons.Default.VerifiedUser),
         Tab("rules", "规则", Icons.Default.Rule),
         Tab("logs", "日志", Icons.Default.ListAlt),
+        Tab("knowledge", "知识库", Icons.Default.LibraryBooks),
         Tab("settings", "设置", Icons.Default.Settings)
     )
 
@@ -142,6 +145,7 @@ fun WaaAppRoot(vm: AppViewModel = viewModel()) {
             composable("review") { ReviewScreen(vm) }
             composable("rules") { RulesScreen(vm) }
             composable("logs") { LogsScreen(vm) }
+            composable("knowledge") { KnowledgeScreen(vm) }
             composable("settings") { SettingsScreen(vm) }
         }
     }

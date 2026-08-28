@@ -8,6 +8,7 @@ import com.waa.assistant.data.model.ConversationEntity
 import com.waa.assistant.data.model.DashboardStats
 import com.waa.assistant.data.model.JobStatus
 import com.waa.assistant.data.model.LogEntity
+import com.waa.assistant.data.model.KnowledgeEntry
 import com.waa.assistant.data.model.ReplyJobEntity
 import com.waa.assistant.data.model.ReplyMode
 import com.waa.assistant.data.model.RuntimeStatus
@@ -46,6 +47,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     val logs: StateFlow<List<LogEntity>> =
         db.logs().observeRecent(200)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val knowledge: StateFlow<List<KnowledgeEntry>> =
+        db.knowledge().observeAll()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val pendingReviewCount: StateFlow<Int> =
@@ -133,6 +138,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun clearAllContext() = viewModelScope.launch { db.messages().clearAll() }
+
+    fun importKnowledge(title: String, content: String, source: String = "file") = viewModelScope.launch {
+        val clean = content.trim()
+        if (clean.isBlank()) return@launch
+        db.knowledge().upsert(
+            KnowledgeEntry(
+                id = com.waa.assistant.util.AppIds.newId("kb"),
+                title = title.ifBlank { "导入话术" },
+                keywords = title,
+                content = clean,
+                source = source
+            )
+        )
+    }
+
+    fun deleteKnowledge(id: String) = viewModelScope.launch { db.knowledge().delete(id) }
+
+    fun clearKnowledge() = viewModelScope.launch { db.knowledge().clearAll() }
 
     fun setReplyMode(mode: ReplyMode) = updateSettings { it.copy(replyMode = mode) }
 }

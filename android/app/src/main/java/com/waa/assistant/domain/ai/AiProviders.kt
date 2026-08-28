@@ -3,6 +3,7 @@ package com.waa.assistant.domain.ai
 import com.waa.assistant.data.model.AiGenerateResult
 import com.waa.assistant.data.model.AiProviderType
 import com.waa.assistant.data.model.IncomingMessage
+import com.waa.assistant.data.model.KnowledgeEntry
 import com.waa.assistant.data.model.ReplyStyle
 import com.waa.assistant.data.prefs.AppSettings
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,23 @@ interface AiProvider {
         context: List<IncomingMessage>,
         settings: AppSettings
     ): AiGenerateResult
+}
+
+class KnowledgeRetriever {
+    fun retrieve(message: IncomingMessage, entries: List<KnowledgeEntry>, limit: Int = 5): List<KnowledgeEntry> {
+        val query = message.content.lowercase()
+        val queryTokens = query.split(Regex("[\\s,，。！？!?、:：]+"))
+            .filter { it.length >= 2 }
+        return entries.map { entry ->
+            val haystack = "${entry.title} ${entry.keywords} ${entry.content}".lowercase()
+            val exact = if (haystack.contains(query)) 5 else 0
+            val tokenScore = queryTokens.count { haystack.contains(it) }
+            entry to (exact + tokenScore)
+        }.filter { it.second > 0 }
+            .sortedWith(compareByDescending<Pair<KnowledgeEntry, Int>> { it.second }.thenByDescending { it.first.updatedAt })
+            .take(limit)
+            .map { it.first }
+    }
 }
 
 /**
@@ -262,24 +280,29 @@ class AiRouter(
     private val ollama: OllamaAiProvider = OllamaAiProvider(),
     private val openai: OpenAiCompatibleProvider = OpenAiCompatibleProvider()
 ) {
+    private val knowledgeRetriever = KnowledgeRetriever()
+
     suspend fun generate(
         message: IncomingMessage,
         context: List<IncomingMessage>,
-        settings: AppSettings
+        settings: AppSettings,
+        knowledge: List<KnowledgeEntry> = emptyList()
     ): AiGenerateResult {
+        val matchedKnowledge = knowledgeRetriever.retrieve(message, knowledge)
+        val enhancedSettings = settings.withKnowledge(matchedKnowledge)
         if (settings.aiProvider == AiProviderType.OFFLINE_FALLBACK) {
-            return offline.generate(message, context, settings)
+            return offline.generate(message, context, enhancedSettings)
         }
         if (settings.aiProvider == AiProviderType.OLLAMA) {
-            return retryGenerate { ollama.generate(message, context, settings) }
+            return retryGenerate { ollama.generate(message, context, enhancedSettings) }
         }
 
         // 云端精选 / 自定义
         return try {
-            retryGenerate { openai.generate(message, context, settings) }
+            retryGenerate { openai.generate(message, context, enhancedSettings) }
         } catch (t: Throwable) {
             if (settings.offlineFallbackEnabled) {
-                val fallback = offline.generate(message, context, settings)
+                val fallback = offline.generate(message, context, enhancedSettings)
                 fallback.copy(
                     intent = (fallback.intent ?: "") + "|fallback_from=${settings.aiProvider.name}",
                     text = fallback.text
@@ -329,6 +352,20 @@ class AiRouter(
             AiProviderType.OFFLINE_FALLBACK -> "离线兜底模板 · 可用" to true
         }
     }
+}
+
+private fun AppSettings.withKnowledge(entries: List<KnowledgeEntry>): AppSettings {
+    if (entries.isEmpty()) return this
+    val material = entries.joinToString("\n") {
+        "【${it.title.ifBlank { "相关话术" }}】关键词：${it.keywords}\n${it.content}"
+    }
+    return copy(
+        systemPrompt = """
+            $systemPrompt
+            以下是知识库检索到的相关话术，仅作为参考。请根据当前消息、会话上下文和回复风格进行理解、改写和完善，不要机械复制，不要编造知识库没有的信息：
+            $material
+        """.trimIndent()
+    )
 }
 
 fun applyFreePreset(settings: AppSettings, provider: AiProviderType): AppSettings {

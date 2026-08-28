@@ -35,7 +35,7 @@ fun ReviewScreen(vm: AppViewModel) {
     val context = LocalContext.current
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("辅助回复 / 人工审核", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text("辅助回复 / 人工审核", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text("AI 生成后由你确认发送，避免误发。", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         if (jobs.isEmpty()) {

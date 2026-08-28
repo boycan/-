@@ -147,7 +147,7 @@ class NotificationAdapter(
         // 通知监听无法可靠发送；交由 AccessibilitySendAdapter / 人工确认
         val accessibility = WeChatAccessibilityService.instance
         return if (accessibility != null) {
-            accessibility.trySend(conversationName, text)
+            accessibility.fillInput(conversationName, text)
         } else {
             Result.failure(
                 IllegalStateException("未开启辅助功能，无法自动发送。请使用「辅助回复」手动确认，或授权辅助功能。")

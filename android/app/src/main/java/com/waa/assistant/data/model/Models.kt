@@ -8,7 +8,7 @@ enum class ConversationType { CONTACT, GROUP }
 enum class ContentType { TEXT, IMAGE, OTHER }
 enum class ReplyMode { AUTO, ASSIST, OFF }
 enum class RuntimeStatus { STOPPED, RUNNING, PAUSED }
-enum class JobStatus { PENDING, GENERATING, REVIEW, SENDING, SENT, IGNORED, FAILED, SKIPPED }
+enum class JobStatus { PENDING, GENERATING, REVIEW, SENDING, FILLED, SENT, IGNORED, FAILED, SKIPPED }
 enum class AiProviderType {
     /** 默认：DeepSeek 免费精选 */
     DEEPSEEK,
@@ -114,6 +114,19 @@ data class AiGenerateResult(
     val model: String,
     val text: String,
     val intent: String? = null
+)
+
+@Entity(
+    tableName = "knowledge_entries",
+    indices = [Index("updatedAt")]
+)
+data class KnowledgeEntry(
+    @PrimaryKey val id: String,
+    val title: String = "",
+    val keywords: String = "",
+    val content: String,
+    val source: String = "manual",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 data class DashboardStats(
