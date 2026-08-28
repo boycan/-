@@ -60,11 +60,11 @@ fun ReviewScreen(vm: AppViewModel) {
                             Text("上次发送失败：${job.error}", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { vm.approve(job.id, text) }) { Text("发送") }
+                            Button(onClick = { vm.approve(job.id, text) }) { Text("填入微信输入框") }
                             OutlinedButton(onClick = {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                 clipboard.setPrimaryClip(ClipData.newPlainText("AI 回复", text))
-                            }) { Text("复制回复") }
+                            }) { Text("复制备用") }
                             OutlinedButton(onClick = { vm.regenerate(job.id) }) { Text("重新生成") }
                             OutlinedButton(onClick = { vm.ignore(job.id) }) { Text("忽略") }
                         }

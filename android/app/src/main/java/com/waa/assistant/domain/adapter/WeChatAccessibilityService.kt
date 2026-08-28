@@ -14,6 +14,7 @@ import kotlinx.coroutines.delay
  * 重要限制：
  * - 微信界面层级会随版本变化，自动发送可能失败
  * - 默认产品模式应优先「辅助回复（人工确认）」
+ * - 当前安全动作只填入输入框，不自动点击发送按钮
  * - 若无法稳定发送，引擎会把任务留在审核态
  */
 class WeChatAccessibilityService : AccessibilityService() {
